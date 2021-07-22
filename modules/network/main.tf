@@ -86,3 +86,21 @@ resource "google_compute_firewall" "allow-ssh" {
   target_tags   = ["ssh"]
   source_ranges = ["0.0.0.0/0"]
 }
+
+// Instance with only internal IP address tries to access external hosts will fail.
+// cloud NAT is must be enabled in the subnet
+resource "google_compute_router" "default" {
+  name    = "lb-http-router"
+  network = module.vpc.network_self_link
+  region  = var.region
+  project = var.host_project_id
+}
+
+module "cloud-nat" {
+  source     = "terraform-google-modules/cloud-nat/google"
+  version    = "1.0.0"
+  router     = google_compute_router.default.name
+  project_id = var.host_project_id
+  region     = var.region
+  name       = "cloud-nat-lb-http-router"
+}
