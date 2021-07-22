@@ -9,3 +9,7 @@ output "service_project" {
 output "subnets" {
   value = module.networking.subnets
 }
+
+output "application_external_ip" {
+  value = module.http-lb.external_ip
+}

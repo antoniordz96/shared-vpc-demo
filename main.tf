@@ -1,6 +1,6 @@
 locals {
-  family = "rhel-7"
-  project = "rhel-cloud"
+  family                = "rhel-7"
+  project               = "rhel-cloud"
   service_account_roles = ["roles/logging.logWriter", "roles/monitoring.metricWriter"]
 }
 
@@ -74,15 +74,15 @@ module "service-project" {
   shared_vpc_subnets = module.networking.subnet_self_links
 
   disable_services_on_destroy = false
-  activate_apis = ["compute.googleapis.com", "logging.googleapis.com"]
-  depends_on = [module.host_project]
+  activate_apis               = ["compute.googleapis.com", "logging.googleapis.com"]
+  depends_on                  = [module.host_project]
 }
 
 resource "google_project_iam_member" "project" {
-  project = module.service-project.project_id
-  role    = each.key
-  member  = "serviceAccount:${module.service-project.service_account_email}"
-  for_each = toset(local.service_account_roles)
+  project    = module.service-project.project_id
+  role       = each.key
+  member     = "serviceAccount:${module.service-project.service_account_email}"
+  for_each   = toset(local.service_account_roles)
   depends_on = [module.service-project]
 }
 
@@ -119,37 +119,37 @@ resource "google_compute_instance" "instance" {
 
 // Apache MIG served by HTTP LB
 module "mig_template" {
-  source             = "terraform-google-modules/vm/google//modules/instance_template"
-  version            = "6.2.0"
+  source  = "terraform-google-modules/vm/google//modules/instance_template"
+  version = "6.2.0"
 
-  disk_size_gb = 20
-  disk_type = "pd-standard"
-  machine_type = "e2-standard-2"
+  disk_size_gb       = 20
+  disk_type          = "pd-standard"
+  machine_type       = "e2-standard-2"
   network            = module.networking.network_self_link
   subnetwork         = "subnet-03"
-  region = var.region
+  region             = var.region
   subnetwork_project = module.host_project.project_id
   service_account = {
     email  = module.service-project.service_account_email
     scopes = ["cloud-platform"]
   }
-  name_prefix    = "apache-mig"
-  startup_script = data.template_file.application.rendered
-  source_image_family = local.family
+  name_prefix          = "apache-mig"
+  startup_script       = data.template_file.application.rendered
+  source_image_family  = local.family
   source_image_project = local.project
-  tags           = ["web"]
-  project_id = module.service-project.project_id
+  tags                 = ["web"]
+  project_id           = module.service-project.project_id
 }
 
 module "mig" {
-  source            = "terraform-google-modules/vm/google//modules/mig"
-  version           = "6.2.0"
+  source  = "terraform-google-modules/vm/google//modules/mig"
+  version = "6.2.0"
 
-  hostname = "apache"
+  hostname          = "apache"
   instance_template = module.mig_template.self_link
   region            = var.region
   target_size       = 2
-  min_replicas = 1
+  min_replicas      = 1
   named_ports = [{
     name = "http",
     port = 80
@@ -162,7 +162,7 @@ module "http-lb" {
   source  = "GoogleCloudPlatform/lb-http/google"
   version = "6.0.1"
 
-  name = "http-lb"
+  name              = "http-lb"
   project           = module.service-project.project_id
   target_tags       = ["web"]
   firewall_projects = [module.host_project.project_id]
