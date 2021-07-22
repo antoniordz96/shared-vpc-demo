@@ -1,5 +1,5 @@
 locals {
-  family = "rhel-8"
+  family = "rhel-7"
   project = "rhel-cloud"
   service_account_roles = ["roles/logging.logWriter", "roles/monitoring.metricWriter"]
 }
@@ -9,8 +9,11 @@ data "google_compute_image" "redhat_image" {
   project = local.project
 }
 
-data "template_file" "group-startup-script" {
+data "template_file" "application" {
   template = file(format("%s/scripts/apache.sh.tpl", path.root))
+  vars = {
+    index_file = file(format("%s/scripts/index.php", path.root))
+  }
 }
 
 resource "random_id" "default" {
@@ -83,6 +86,11 @@ resource "google_project_iam_member" "project" {
   depends_on = [module.service-project]
 }
 
+/******************************************
+  Application Deployment
+*****************************************/
+
+// Bastion Host
 resource "google_compute_instance" "instance" {
   machine_type = "e2-small"
   name         = "bastion-host"
@@ -109,10 +117,14 @@ resource "google_compute_instance" "instance" {
   tags = ["ssh"]
 }
 
+// Apache MIG served by HTTP LB
 module "mig_template" {
   source             = "terraform-google-modules/vm/google//modules/instance_template"
   version            = "6.2.0"
 
+  disk_size_gb = 20
+  disk_type = "pd-standard"
+  machine_type = "e2-standard-2"
   network            = module.networking.network_self_link
   subnetwork         = "subnet-03"
   region = var.region
@@ -122,7 +134,7 @@ module "mig_template" {
     scopes = ["cloud-platform"]
   }
   name_prefix    = "apache-mig"
-  startup_script = data.template_file.group-startup-script.rendered
+  startup_script = data.template_file.application.rendered
   source_image_family = local.family
   source_image_project = local.project
   tags           = ["web"]
@@ -143,6 +155,7 @@ module "mig" {
     port = 80
   }]
   project_id = module.service-project.project_id
+  depends_on = [module.networking]
 }
 
 module "http-lb" {
