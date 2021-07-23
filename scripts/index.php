@@ -45,7 +45,7 @@
                         <h4 class="text-white">Resources</h4>
                         <ul class="list-unstyled">
                             <li><a href="https://github.com/antoniordz96/shared-vpc-demo" class="text-white">GitHub Source Code</a></li>
-                            <li><a href="https://www.linkedin.com/in/antoniordz96" class="text-white">LinkedIn</a></li>
+                            <li><a href="https://www.linkedin.com" class="text-white">LinkedIn</a></li>
                             <li><a href="https://console.cloud.google.com" class="text-white">Google Cloud Console</a></li>
                         </ul>
                     </div>
